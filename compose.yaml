@@ -1,4 +1,4 @@
-name: coin-llm-tutorial  # コンテナ名のプレフィックスになる．プロジェクト名にしておくと良い．
+name: coin-llm-tutorial-koki  # コンテナ名のプレフィックスになる．プロジェクト名にしておくと良い．
 
 services:
   app:                                    # サービス名．任意に変更可能．
