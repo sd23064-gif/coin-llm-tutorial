@@ -6,28 +6,6 @@ import sqlite3
 
 MODEL_NAME_OR_PATH = "llm-jp/llm-jp-3-980m-instruct2"
 
-conn = sqlite3.connect('chat_history.db')
-cursor = conn.cursor()
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS chat_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_input TEXT,
-    bot_response TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-)
-''')
-
-def save_to_db(user_input, bot_response):
-    cursor.execute("INSERT INTO chat_history(user_input, bot_response) VALUES (?, ?)", (user_input, bot_response))
-    conn.commit()
-
-def display_chat_history():
-    cursor.execute("SELECT * FROM chat_history ORDER BY timestamp")
-    rows = cursor.fetchall()
-    for row in rows:
-        print(f"{row[3]} - User: {row[1]} | Bot: {row[2]}")
-
-
 def main():
     tokenizer = AutoTokenizer.from_pretrained(
         MODEL_NAME_OR_PATH,
@@ -53,12 +31,16 @@ def main():
         except (EOFError, KeyboardInterrupt):
             print("\nExiting.")
             break
-
         prompt_text = tokenizer.apply_chat_template(
             messages + [{"role": "user", "content": user_input}],
             tokenize=False,
             add_generation_prompt=True,
         )
+
+        messages.append({
+            "role": "user",
+            "content": user_input,
+        })
 
         inputs = tokenizer(
             prompt_text,
@@ -70,16 +52,26 @@ def main():
             attention_mask=inputs["attention_mask"],
             max_new_tokens=1024,
             pad_token_id=tokenizer.eos_token_id,
-            do_sample=False,
-            num_beams=1,
+            do_sample=True,
+            num_beams=3,
+            top_k=50,
+            temperature=0.7,
+            top_p=0,
         )
         response = tokenizer.decode(
             outputs[0, inputs["input_ids"].shape[1] :],
             skip_special_tokens=True,
         )
 
+        messages.append({
+            "role": "assistant",
+            "content": response,
+        })
+
         print(response)
 
+
+        
 
 if __name__ == "__main__":
     main()
