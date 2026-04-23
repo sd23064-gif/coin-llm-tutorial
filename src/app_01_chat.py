@@ -2,8 +2,30 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
 )
+import sqlite3
 
 MODEL_NAME_OR_PATH = "llm-jp/llm-jp-3-980m-instruct2"
+
+conn = sqlite3.connect('chat_history.db')
+cursor = conn.cursor()
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS chat_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_input TEXT,
+    bot_response TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+''')
+
+def save_to_db(user_input, bot_response):
+    cursor.execute("INSERT INTO chat_history(user_input, bot_response) VALUES (?, ?)", (user_input, bot_response))
+    conn.commit()
+
+def display_chat_history():
+    cursor.execute("SELECT * FROM chat_history ORDER BY timestamp")
+    rows = cursor.fetchall()
+    for row in rows:
+        print(f"{row[3]} - User: {row[1]} | Bot: {row[2]}")
 
 
 def main():
@@ -23,6 +45,7 @@ def main():
         },
     ]
 
+    
     print("Enter your prompt (Ctrl-C or Ctrl-D to exit):")
     while True:
         try:
